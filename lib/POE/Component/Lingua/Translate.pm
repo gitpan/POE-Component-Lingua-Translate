@@ -6,7 +6,7 @@ use Carp;
 use POE;
 use POE::Component::Generic;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 sub new {
     my ($package, %args) = @_;
@@ -19,6 +19,7 @@ sub new {
     POE::Session->create(
         object_states => [
             $self => {
+                # public events
                 translate => '_translate',
                 shutdown => '_shutdown',
             },
@@ -99,7 +100,7 @@ __END__
 =head1 NAME
 
 POE::Component::Lingua::Translate - A non-blocking wrapper around
-L<Lingua::Translate|Lingua::Translate>.
+L<Lingua::Translate|Lingua::Translate>
 
 =head1 SYNOPSIS
 
@@ -117,6 +118,7 @@ L<Lingua::Translate|Lingua::Translate>.
  sub _start {
      my $heap = $_[HEAP];
      $heap->{trans} = POE::Component::Lingua::Translate->new(
+         alias => 'translator',
          trans_args => {
              back_end => 'Babelfish',
              src      => 'en',
@@ -124,8 +126,7 @@ L<Lingua::Translate|Lingua::Translate>.
          }
      );
      
-     $poe_kernel->post(
-         $heap->{trans}->session_id() => translate => 'this is a sentence');
+     $poe_kernel->post(translator => translate => 'this is a sentence');
      return;
  }
 
@@ -146,10 +147,12 @@ C<translate> events and emits C<translated> events back.
 
 =item C<new>
 
-Takes one argument:
+Takes two arguments.
 
 'trans_args', a hashref containing arguments that will be passed to
-L<Lingua::Translate|Lingua::Translate>'s constructor.
+L<Lingua::Translate|Lingua::Translate>'s constructor. This argument is required.
+
+'alias', an optional alias for the component's session.
 
 =back
 
