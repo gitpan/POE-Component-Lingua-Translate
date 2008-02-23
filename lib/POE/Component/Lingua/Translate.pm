@@ -6,7 +6,7 @@ use Carp;
 use POE;
 use POE::Component::Generic;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 sub new {
     my ($package, %args) = @_;
@@ -63,7 +63,7 @@ sub _shutdown {
 }
 
 sub _translate {
-    my ($self, $sender, $text) = @_[OBJECT, SENDER, ARG0];
+    my ($self, $sender, $args) = @_[OBJECT, SENDER, ARG0];
 
     $self->{trans}->yield(
         translate =>
@@ -71,9 +71,10 @@ sub _translate {
                 event => '_result',
                 data => {
                     recipient => $sender->ID(),
+                    context => $args->{context} || { },
                 },
             },
-            $text,
+            $args->{text},
     );
     return;
 }
@@ -85,7 +86,10 @@ sub _result {
         # do something?
     }
 
-    $poe_kernel->post($ref->{data}->{recipient} => translated => $result) or print "$!\n";
+    $poe_kernel->post($ref->{data}->{recipient} => translated => {
+        text => $result,
+        context => $ref->{data}->{context},
+    });
     return;
 }
 
