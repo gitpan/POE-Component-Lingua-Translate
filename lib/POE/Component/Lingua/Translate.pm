@@ -6,15 +6,13 @@ use Carp;
 use POE;
 use POE::Component::Generic;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 sub new {
     my ($package, %args) = @_;
-    my $self = bless \%args, $package;
-    
-    if (ref $self->{trans_args} ne 'HASH') {
-        croak "A 'trans_args' hashref argument is required";
-    }
+    my $self = bless { }, $package;
+    $self->{alias} = delete $args{alias} if $args{alias};
+    $self->{trans_args} = \%args;
     
     POE::Session->create(
         object_states => [
@@ -63,7 +61,7 @@ sub _shutdown {
 }
 
 sub _translate {
-    my ($self, $sender, $args) = @_[OBJECT, SENDER, ARG0];
+    my ($self, $sender, $text, $context) = @_[OBJECT, SENDER, ARG0, ARG1];
 
     $self->{trans}->yield(
         translate =>
@@ -71,10 +69,10 @@ sub _translate {
                 event => '_result',
                 data => {
                     recipient => $sender->ID(),
-                    context => $args->{context} || { },
+                    context => $context || { },
                 },
             },
-            $args->{text},
+            $text,
     );
     return;
 }
@@ -85,11 +83,10 @@ sub _result {
     if ($ref->{error}) {
         # do something?
     }
-
-    $poe_kernel->post($ref->{data}->{recipient} => translated => {
-        text => $result,
-        context => $ref->{data}->{context},
-    });
+    
+    my ($recipient, $context) = @{ $ref->{data} }{ qw(recipient context) };
+    $poe_kernel->post($recipient => translated => $result, $context);
+    
     return;
 }
 
@@ -123,19 +120,18 @@ L<Lingua::Translate|Lingua::Translate>
      my $heap = $_[HEAP];
      $heap->{trans} = POE::Component::Lingua::Translate->new(
          alias => 'translator',
-         trans_args => {
-             back_end => 'Babelfish',
-             src      => 'en',
-             dest     => 'de',
-         }
+         back_end => 'Babelfish',
+         src      => 'en',
+         dest     => 'de',
      );
      
-     $poe_kernel->post(translator => translate => 'this is a sentence');
+     $poe_kernel->post(translator => translate => 'This is a sentence');
      return;
  }
 
  sub translated {
      my $result = $_[ARG0];
+     # prints 'Dieses ist ein Satz'
      print $result . "\n";
  }
 
@@ -151,12 +147,12 @@ C<translate> events and emits C<translated> events back.
 
 =item C<new>
 
-Takes two arguments.
-
-'trans_args', a hashref containing arguments that will be passed to
-L<Lingua::Translate|Lingua::Translate>'s constructor. This argument is required.
+Arguments
 
 'alias', an optional alias for the component's session.
+
+Any other arguments will be passed verbatim to L<Lingua::Translate|Lingua::Translate>'s
+constructor.
 
 =back
 
@@ -178,8 +174,9 @@ The POE events this component will accept.
 
 =item C<translate>
 
-Takes one argument, a string to translate. It will be passed to the
-L<Lingua::Translate|Lingua::Translate> object's C<translate()> method.
+The first argument should be a string containing some text to translate. The
+second argument (optional) can be a hash reference containing some context
+information. You'll get this hash reference back with the C<translated> event.
 
 =item C<shutdown>
 
@@ -195,7 +192,8 @@ The POE events emitted by this component.
 
 =item C<translated>
 
-ARG0 is the translated text, or C<undef> if the translation failed.
+ARG0 is the translated text, or C<undef> if the translation failed. ARG1 is
+the context hashref from C<translate>.
 
 =back
 
