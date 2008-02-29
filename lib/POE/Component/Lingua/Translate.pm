@@ -6,7 +6,7 @@ use Carp;
 use POE;
 use POE::Component::Generic;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 sub new {
     my ($package, %args) = @_;
@@ -79,13 +79,15 @@ sub _translate {
 
 sub _result {
     my ($ref, $result) = @_[ARG0, ARG1];
-
-    if ($ref->{error}) {
-        # do something?
-    }
     
     my ($recipient, $context) = @{ $ref->{data} }{ qw(recipient context) };
-    $poe_kernel->post($recipient => translated => $result, $context);
+    $poe_kernel->post(
+        $recipient,
+        'translated',
+        $result,
+        $context,
+        ($ref->{error} ? $ref->{error} : ())
+    );
     
     return;
 }
@@ -192,8 +194,8 @@ The POE events emitted by this component.
 
 =item C<translated>
 
-ARG0 is the translated text, or C<undef> if the translation failed. ARG1 is
-the context hashref from C<translate>.
+ARG0 is the translated text. ARG1 is the context hashref from C<translate>. If
+there was an error, ARG2 will be the error string.
 
 =back
 
