@@ -1,12 +1,16 @@
 package POE::Component::Lingua::Translate;
+BEGIN {
+  $POE::Component::Lingua::Translate::AUTHORITY = 'cpan:HINRIK';
+}
+BEGIN {
+  $POE::Component::Lingua::Translate::VERSION = '0.06';
+}
 
 use strict;
-use warnings;
+use warnings FATAL => 'all';
 use Carp;
 use POE;
 use POE::Component::Generic;
-
-our $VERSION = '0.05';
 
 sub new {
     my ($package, %args) = @_;
@@ -79,7 +83,7 @@ sub _translate {
 
 sub _result {
     my ($ref, $result) = @_[ARG0, ARG1];
-    
+
     my ($recipient, $context) = @{ $ref->{data} }{ qw(recipient context) };
     $poe_kernel->post(
         $recipient,
@@ -98,12 +102,12 @@ sub session_id {
 }
 
 1;
-__END__
+
+=encoding utf8
 
 =head1 NAME
 
-POE::Component::Lingua::Translate - A non-blocking wrapper around
-L<Lingua::Translate|Lingua::Translate>
+POE::Component::Lingua::Translate - A non-blocking wrapper around L<Lingua::Translate|Lingua::Translate>
 
 =head1 SYNOPSIS
 

@@ -1,7 +1,11 @@
-Makefile.PL
-MANIFEST
-INSTALL
 Changes
+LICENSE
+MANIFEST
+MANIFEST.SKIP
+META.json
+META.yml
+Makefile.PL
+README
+dist.ini
 lib/POE/Component/Lingua/Translate.pm
 t/00-compile.t
-META.yml                                 Module meta-data (added by MakeMaker)
